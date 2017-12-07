@@ -1,45 +1,28 @@
-# if VARNISHSRC is defined on the command-line, use that. Otherwise, build
-# this the same as the modules that come with varnish (i.e. we're building
-# within the varnish src dir itself, and $(top_srcdir) is the varnish source).
-#
-if HAVE_VARNISHSRC
-SRC = $(VARNISHSRC)
-DIR_PREFIX = /
-else
-SRC = $(top_srcdir)
-DIR_PREFIX = lib/libvmod-statsd/
-endif
-
-INCLUDES = -I$(SRC)/include -I$(SRC)
-
-if HAVE_VMODDIR
-vmoddir = $(VMODDIR)
-else
-vmoddir = $(pkglibdir)/vmods
-endif
+AM_CFLAGS = $(VARNISHAPI_CFLAGS) -Wall -Werror
+AM_LDFLAGS = $(VARNISHAPI_LIBS) $(VMOD_LDFLAGS)
 
 vmod_LTLIBRARIES = libvmod_statsd.la
 
-libvmod_statsd_la_LDFLAGS = -module -export-dynamic -avoid-version
-
 libvmod_statsd_la_SOURCES = \
-	vcc_if.c \
-	vcc_if.h \
 	vmod_statsd.c
 
-vcc_if.c vcc_if.h: $(SRC)/lib/libvmod_std/vmod.py $(top_srcdir)/$(DIR_PREFIX)src/vmod_statsd.vcc
-	@PYTHON@ $(SRC)/lib/libvmod_std/vmod.py $(top_srcdir)/$(DIR_PREFIX)src/vmod_statsd.vcc
+nodist_libvmod_statsd_la_SOURCES = \
+	vcc_statsd_if.c \
+	vcc_statsd_if.h
 
-VMOD_TESTS = tests/*.vtc
-.PHONY: $(VMOD_TESTS)
+dist_man_MANS = vmod_statsd.3
 
-tests/*.vtc:
-	$(SRC)/bin/varnishtest/varnishtest -Dvarnishd=$(SRC)/bin/varnishd/varnishd -Dvmod_topbuild=$(abs_top_builddir) $@
+@BUILD_VMOD_STATSD@
 
-check: $(VMOD_TESTS)
+AM_TESTS_ENVIRONMENT = \
+	PATH="$(VMOD_TEST_PATH)" \
+	LD_LIBRARY_PATH="$(VARNISH_LIBRARY_PATH)"
+TEST_EXTENSIONS = .vtc
+VTC_LOG_COMPILER = varnishtest -v
+AM_VTC_LOG_FLAGS = -Dvmod_statsd="$(VMOD_STATSD)"
+
+TESTS = @VMOD_TESTS@
 
 EXTRA_DIST = \
 	vmod_statsd.vcc \
 	$(VMOD_TESTS)
-
-CLEANFILES = $(builddir)/vcc_if.c $(builddir)/vcc_if.h

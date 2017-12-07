@@ -10,7 +10,7 @@ server s1 {
 # hang, or do anything else bad
 
 varnish v1 -vcl+backend {
-	import statsd from "${vmod_topbuild}/src/.libs/libvmod_statsd.so";
+    import ${vmod_statsd};
 
     sub vcl_init {
         statsd.server("localhost", "1");    # nothing listens on UDP port 1 right?
@@ -44,5 +44,3 @@ client c1 {
 }
 
 client c1 -run
-
-
